@@ -1,6 +1,9 @@
 -- =====================================================================
--- schema.sql  —  ESTRUTURA DO BANCO (rode UMA vez, antes de tudo)
--- Como rodar:   mysql -u root -p < database/schema.sql
+-- schema.sql  —  ESTRUTURA DO BANCO (roda UMA vez, antes de tudo)
+-- Com Docker você NÃO roda este arquivo na mão: o container executa ele
+-- sozinho na primeira subida ("docker compose up -d").
+-- Para rodar de novo do zero:   docker compose down -v  &&  docker compose up -d
+-- (Sem Docker, com MySQL instalado:  mysql -u root -p < database/schema.sql)
 -- =====================================================================
 
 -- 1) Cria o banco (o "armário" onde ficam as tabelas)
@@ -33,7 +36,11 @@ CREATE TABLE IF NOT EXISTS consultas (
     ON DELETE CASCADE      -- apagou o paciente? apaga as consultas dele
 ) ENGINE = InnoDB;
 
--- -- 4) Usuário da APLICAÇÃO (nunca use root no código!)
+-- 4) Usuário da APLICAÇÃO (nunca use root no código!)
+--    Com Docker, quem cria o usuário 'aluno' é o docker-compose.yml
+--    (MYSQL_USER / MYSQL_PASSWORD, lidos do .env). Por isso o trecho abaixo
+--    fica comentado. Num MySQL instalado na máquina, seria assim:
+--
 -- CREATE USER IF NOT EXISTS 'aluno'@'localhost' IDENTIFIED BY 'senha123';
 -- GRANT SELECT, INSERT, UPDATE, DELETE ON hospital.* TO 'aluno'@'localhost';
 -- FLUSH PRIVILEGES;

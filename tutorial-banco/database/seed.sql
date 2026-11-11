@@ -1,6 +1,8 @@
 -- =====================================================================
 -- seed.sql  —  DADOS DE EXEMPLO (opcional)
--- Como rodar:   mysql -u root -p hospital < database/seed.sql
+-- Com Docker o container executa este arquivo sozinho na primeira subida,
+-- logo depois do schema.sql.
+-- (Sem Docker:  mysql -u root -p hospital < database/seed.sql)
 -- =====================================================================
 USE hospital;
 

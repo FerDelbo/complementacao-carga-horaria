@@ -1,4 +1,4 @@
-# Tutorial: conectando o frontend ao banco de dados (HTML + Node + MySQL)
+# Aula 2 — Conectando o frontend ao banco de dados (HTML + Node + MySQL)
 
 Continuação do `tutorial-banco`. Lá o CRUD era chamado por um roteiro (`main.js`).
 Aqui quem chama é uma **página HTML**: cada botão faz um pedido HTTP ao servidor
@@ -7,6 +7,20 @@ Node, que executa a função de CRUD e devolve o resultado em JSON.
 ```
 página (fetch)  →  rota no server.js  →  função do pacientesRepo.js  →  MySQL (Docker)
 ```
+
+Slides da aula: abra `slides_frontend_backend.html` no navegador.
+
+## O que você vai fazer nesta aula
+
+1. Subir o MySQL desta aula num container Docker (passos 1 a 3).
+2. Subir o servidor Node e abrir a página (passos 4 e 5).
+3. Cadastrar, editar e excluir pacientes olhando a aba **Rede** do navegador, para
+   ver cada pedido HTTP passar (passo 6).
+4. Seguir um clique do começo ao fim no código: `frontend/script.js` →
+   `backend/server.js` → `backend/pacientesRepo.js`.
+5. Fazer os [exercícios](#exercícios).
+
+## O que tem na pasta
 
 ```
 tutorial-frontend/
@@ -36,13 +50,17 @@ Você **não** precisa ter o MySQL instalado na máquina: o banco roda dentro de
 container Docker. Se já tiver um MySQL local, não tem problema — o container usa a
 porta **3307**, e o local continua na 3306.
 
+O banco desta aula é **separado** do da aula 1 (outro container, outra porta: lá
+era a 3308). Você não precisa ter a aula 1 rodando, e o que cadastrou lá não
+aparece aqui.
+
 ## Passo a passo
 
 Todos os comandos partem da pasta `tutorial-frontend`.
 
 1. **Credenciais**: copie o arquivo de exemplo. Os valores padrão já funcionam.
    ```bash
-   cp .env.exemplo .env
+   cp .env.exemplo .env          # Windows (cmd): copy .env.exemplo .env
    ```
    O mesmo `.env` é lido pelo Docker (para criar o banco) e pelo backend (para
    conectar), então usuário, senha e porta sempre batem.
@@ -77,7 +95,15 @@ Todos os comandos partem da pasta `tutorial-frontend`.
 
 5. **Abrir a página**: http://localhost:3000 (não abra o `index.html` com dois cliques).
 
-6. Aperte **F12 → aba Rede** e use a página: cada clique aparece como um pedido HTTP.
+6. Aperte **F12 → aba Rede** (Network) e use a página: cada clique aparece como um
+   pedido HTTP. Para cada um, repare no **método**, na **URL**, no **status** e na
+   aba **Resposta**. Experimente cadastrar duas vezes o mesmo CPF e veja o `409`.
+
+7. **Conferir no banco** que o que apareceu na tela foi gravado de verdade
+   (em outro terminal, na pasta `tutorial-frontend`):
+   ```bash
+   docker compose exec mysql mysql -ualuno -psenha123 hospital -e "SELECT * FROM pacientes"
+   ```
 
 Para parar o servidor: `Ctrl+C` no terminal. Para parar o banco: `docker compose down`
 (os dados ficam guardados e voltam no próximo `docker compose up -d`).
@@ -90,6 +116,7 @@ Para parar o servidor: `Ctrl+C` no terminal. Para parar o banco: `docker compose
 | Ver se está no ar | `docker compose ps` |
 | Ver o log do MySQL | `docker compose logs -f mysql` |
 | Abrir o terminal SQL | `docker compose exec mysql mysql -ualuno -psenha123 hospital` |
+| "Desligar o MySQL" (para os exercícios) | `docker compose stop` — e `docker compose start` para religar |
 | Parar (mantém os dados) | `docker compose down` |
 | **Zerar tudo** e recriar do zero | `docker compose down -v` e depois `docker compose up -d` |
 
@@ -111,6 +138,33 @@ porta `3307`, usuário `aluno`, senha `senha123`, banco `hospital`.
 
 Erros voltam como `{ "erro": "mensagem" }` com status `400` (dados inválidos),
 `404` (id não existe), `409` (CPF repetido) ou `500` (falha no servidor).
+
+Dá para testar as rotas sem a página, pelo terminal:
+
+```bash
+curl localhost:3000/api/pacientes
+curl -X POST -H "Content-Type: application/json" \
+     -d '{"nome":"Diego Rocha","cpf":"44455566677"}' localhost:3000/api/pacientes
+```
+
+## Exercícios
+
+1. **Busca por nome** — crie a rota `GET /api/pacientes/busca?nome=ana` usando o
+   `buscarPorNome` da aula 1 (`req.query.nome`) e um campo de busca na página.
+2. **Editar o nome** — hoje só o telefone muda. Faça o `PUT` aceitar também o
+   nome: nova função no repo, rota e tela.
+3. **Quebre de propósito** — desligue o banco (`docker compose stop`) com o
+   servidor no ar e clique em Cadastrar. Que status aparece na aba Rede? O que a
+   página mostra? Depois religue com `docker compose start`.
+4. **Valide o id** — peça `DELETE /api/pacientes/abc`. Que status volta? Faça a
+   rota responder `400` quando o id não for um número.
+5. **Tire o `resposta.ok`** — comente o `if (!resposta.ok)` no `script.js` e
+   cadastre um CPF repetido. O que a página diz? Por quê?
+6. **Consultas** — crie `GET /api/consultas` com o JOIN da aula 1 e mostre o
+   resultado em uma segunda tabela.
+
+Lembre: mudou algo em `backend/`, reinicie o servidor (`Ctrl+C` e `node server.js`).
+Mudou algo em `frontend/`, basta recarregar a página (`Ctrl+Shift+R` ignora o cache).
 
 ## Erros comuns
 

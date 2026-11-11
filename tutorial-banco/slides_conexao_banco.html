@@ -358,7 +358,10 @@ FLUSH PRIVILEGES;</code></pre></div>
         <li><span class="kw">'aluno'@'localhost'</span>: o usuário só pode conectar vindo desta máquina.</li>
         <li>Se o código tentar <span class="kw">DROP TABLE</span>, o banco responde <i>command denied</i>. Ótimo.</li>
       </ul>
-      <div class="code term" style="margin-top:14px"><span class="lbl sh">terminal</span><pre><code>$ mysql -u root -p &lt; database/schema.sql
+      <div class="code term" style="margin-top:14px"><span class="lbl sh">terminal</span><pre><code># com Docker: o container roda schema.sql e seed.sql sozinho
+$ docker compose up -d
+# com MySQL instalado na máquina:
+$ mysql -u root -p &lt; database/schema.sql
 $ mysql -u root -p hospital &lt; database/seed.sql</code></pre></div>
     </div>
   </div>
@@ -1021,11 +1024,11 @@ Removidos: 2</code></pre></div>
     <div>
       <h3>Para rodar na sua máquina</h3>
       <ol class="steps">
-        <li>MySQL ligado. Rodar <span class="kw">schema.sql</span> e <span class="kw">seed.sql</span> como root.</li>
         <li>Copiar <span class="kw">.env.exemplo</span> → <span class="kw">.env</span>.</li>
+        <li><span class="kw">docker compose up -d</span> e esperar o <span class="kw">(healthy)</span> no <span class="kw">docker compose ps</span>. O container roda o <span class="kw">schema.sql</span> e o <span class="kw">seed.sql</span> sozinho.</li>
         <li><b>Python:</b> <span class="kw">cd python</span> · criar venv · <span class="kw">pip install -r requirements.txt</span> · <span class="kw">python main.py</span></li>
         <li><b>JS:</b> <span class="kw">cd javascript</span> · <span class="kw">npm install</span> · <span class="kw">node main.js</span></li>
-        <li>Abrir o MySQL e conferir: <span class="kw">SELECT * FROM pacientes;</span></li>
+        <li>Conferir no banco (<span class="kw">docker compose exec mysql mysql -ualuno -psenha123 hospital</span>): <span class="kw">SELECT * FROM pacientes;</span></li>
       </ol>
       <div class="note" style="margin-top:12px">Repare no passo 7: o paciente “Elisa Clone” <b>não</b> aparece no banco. O rollback desfez o que já tinha sido feito.</div>
     </div>

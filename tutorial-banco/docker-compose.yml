@@ -1,0 +1,44 @@
+# =====================================================================
+# docker-compose.yml — o BANCO DE DADOS da aula 1 (MySQL 8.0)
+#
+#   subir:    docker compose up -d
+#   parar:    docker compose down
+#   zerar:    docker compose down -v   (apaga os dados e recria do zero)
+#
+# Os valores vêm do arquivo .env (o mesmo que o db.py e o db.js leem).
+# Se o .env não existir, valem os padrões depois do ":-".
+# =====================================================================
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: hospital-mysql-aula1
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root123}
+      MYSQL_DATABASE: ${DB_NAME:-hospital}
+      MYSQL_USER: ${DB_USER:-aluno}             # usuário da aplicação
+      MYSQL_PASSWORD: ${DB_PASSWORD:-senha123}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    ports:
+      # porta do seu computador : porta dentro do container
+      # Dentro do container o MySQL escuta na 3306 (a porta padrão, a dos slides).
+      # Do lado de fora usamos a 3308 para não brigar com um MySQL instalado
+      # na máquina (3306) nem com o banco da aula 2 (3307).
+      - "127.0.0.1:${DB_PORT:-3308}:3306"
+    volumes:
+      # os dados ficam num volume: sobrevivem a "docker compose down"
+      - mysql_dados:/var/lib/mysql
+      # na PRIMEIRA subida o MySQL roda, em ordem alfabética, os .sql desta pasta
+      # (schema.sql cria as tabelas, depois seed.sql insere os exemplos)
+      - ./database:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+volumes:
+  mysql_dados:

@@ -656,12 +656,12 @@ app.use((err, req, res, next) => {
   <div class="grid2">
     <div>
       <ol class="steps">
-        <li>MySQL ligado. Se ainda não fez na parte 1, rode <span class="kw">schema.sql</span> e <span class="kw">seed.sql</span> como root.</li>
-        <li>Copie <span class="kw">.env.exemplo</span> → <span class="kw">.env</span> e ajuste usuário e senha.</li>
+        <li>Copie <span class="kw">.env.exemplo</span> → <span class="kw">.env</span> (os valores padrão já funcionam).</li>
+        <li><span class="kw">docker compose up -d</span> e espere o <span class="kw">(healthy)</span> no <span class="kw">docker compose ps</span>. O container roda o <span class="kw">schema.sql</span> e o <span class="kw">seed.sql</span> sozinho.</li>
         <li><span class="kw">cd backend</span> · <span class="kw">npm install</span> · <span class="kw">node server.js</span></li>
         <li>Abra <span class="kw">http://localhost:3000</span> no navegador.</li>
         <li>F12 → aba <b>Rede</b>. Cadastre, edite e exclua, vendo cada pedido passar.</li>
-        <li>Confira no MySQL: <span class="kw">SELECT * FROM pacientes;</span></li>
+        <li>Confira no banco (<span class="kw">docker compose exec mysql mysql -ualuno -psenha123 hospital</span>): <span class="kw">SELECT * FROM pacientes;</span></li>
       </ol>
       <div class="note warn" style="margin-top:12px">Não abra o <span class="kw">index.html</span> com dois cliques. Em <span class="kw">file://</span> não existe servidor para responder a <span class="kw">/api/pacientes</span>, e a página mostra “Não foi possível falar com o servidor”.</div>
     </div>
