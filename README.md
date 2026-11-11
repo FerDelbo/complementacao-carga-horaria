@@ -1,5 +1,4 @@
-# Banco de dados: do SQL à página web
-
+# Complementação de carga horaria: Projeto integrador
 Material de duas aulas sobre como uma aplicação conversa com um banco de dados
 MySQL. O exemplo é o mesmo nas duas: um banco `hospital` com cadastro de pacientes.
 
@@ -50,8 +49,8 @@ Precisa de: Docker com o plugin Compose e Node 18+.
 ## Como começar
 
 ```bash
-git clone <url-deste-repositorio>
-cd <pasta-do-repositorio>
+git clone https://github.com/FerDelbo/complementacao-carga-horaria
+cd complementacao-carga-horaria
 ```
 
 Depois entre na pasta da aula e siga o `README.md` de lá:
