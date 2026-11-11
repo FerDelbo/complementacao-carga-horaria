@@ -1,0 +1,30 @@
+# ── Credenciais ──────────────────────────────────────────────
+# O .env tem usuário e senha do banco: nunca vai para o GitHub.
+# O modelo (.env.exemplo) vai, para o aluno copiar.
+.env
+.env.*
+!.env.exemplo
+
+# ── Node.js ──────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+
+# ── Python ───────────────────────────────────────────────────
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# ── Banco de dados (dumps e dados locais) ────────────────────
+*.sql.bak
+*.dump
+
+# ── Editor e sistema operacional ─────────────────────────────
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# ── Logs ─────────────────────────────────────────────────────
+*.log

@@ -1,0 +1,72 @@
+/* Aparência da página. Nada aqui tem a ver com a comunicação com o servidor. */
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: #f5f3ee;
+  color: #1c2230;
+  font-family: system-ui, sans-serif;
+}
+
+main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+h1 { margin: 0 0 16px; }
+h2 { margin: 0; font-size: 18px; grid-column: 1 / -1; }
+
+form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+  align-items: end;
+  background: #fff;
+  border: 1px solid #dcd8cf;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+label { display: grid; gap: 4px; font-size: 14px; font-weight: 600; }
+
+input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #b9b4a8;
+  border-radius: 8px;
+  font: inherit;
+}
+
+button {
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 8px;
+  background: #0e7c66;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+button:hover { background: #0b6352; }
+
+#mensagem { min-height: 24px; margin: 14px 0; font-weight: 600; }
+#mensagem.ok   { color: #1e8449; }
+#mensagem.erro { color: #c0392b; }
+
+.rolagem { overflow-x: auto; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+}
+th, td { padding: 10px 12px; border-bottom: 1px solid #dcd8cf; text-align: left; white-space: nowrap; }
+th { background: #1f3a5f; color: #fff; }
+
+td button { padding: 5px 10px; font-size: 13px; background: #3b6ea5; }
+td button:hover { background: #2f5985; }
+td button + button { margin-left: 6px; background: #c0392b; }
+td button + button:hover { background: #a03024; }

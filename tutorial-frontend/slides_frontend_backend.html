@@ -1,0 +1,775 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Frontend conversando com o banco</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<style>
+:root{
+  --bg:#f5f3ee; --paper:#ffffff; --ink:#1c2230; --muted:#5d6679; --line:#dcd8cf;
+  --navy:#1f3a5f; --db:#0e7c66; --dbsoft:#d8f0e9; --fe:#3b6ea5; --fesoft:#dde8f5;
+  --js:#b8860b; --jssoft:#f7ecd0; --warn:#c0392b; --warnsoft:#f9dfdb; --ok:#1e8449;
+  --code:#14181f; --codeink:#e6e6e6;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;overflow:hidden}
+.deck{height:100%;position:relative}
+.slide{position:absolute;inset:0;padding:48px 64px 80px;overflow-y:auto;opacity:0;pointer-events:none;transform:translateX(30px);transition:opacity .35s,transform .35s;display:flex;flex-direction:column}
+.slide.ativo{opacity:1;pointer-events:auto;transform:none}
+.inner{max-width:1180px;width:100%;margin:0 auto;flex:1;display:flex;flex-direction:column;gap:18px}
+.tag{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--db)}
+h1{font-size:54px;line-height:1.05;font-weight:800;letter-spacing:-.02em}
+h2{font-size:34px;line-height:1.15;font-weight:800;letter-spacing:-.01em}
+h3{font-size:18px;font-weight:700;margin-bottom:6px}
+p,li{font-size:18px;line-height:1.55;color:var(--ink)}
+.lead{font-size:21px;color:var(--muted);max-width:900px}
+ul{padding-left:22px} li{margin:4px 0}
+.muted{color:var(--muted)}
+b,strong{font-weight:700}
+.kw{font-family:"JetBrains Mono",monospace;font-size:.88em;background:#ebe7de;padding:1px 6px;border-radius:4px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.grid2>*,.grid3>*{min-width:0}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+.card.db{border-left:5px solid var(--db)} .card.fe{border-left:5px solid var(--fe)} .card.js{border-left:5px solid var(--js)} .card.warn{border-left:5px solid var(--warn)}
+.note{background:var(--dbsoft);border-radius:10px;padding:14px 18px;font-size:17px}
+.note.warn{background:var(--warnsoft)} .note.js{background:var(--jssoft)} .note.fe{background:var(--fesoft)}
+.code{position:relative;border-radius:12px;overflow:hidden;background:var(--code)}
+.code .lbl{position:absolute;top:0;right:0;font:600 11px "JetBrains Mono",monospace;padding:5px 10px;border-bottom-left-radius:8px;color:#fff;letter-spacing:.05em}
+.lbl.fe{background:var(--fe)} .lbl.js{background:var(--js)} .lbl.sql{background:var(--db)} .lbl.sh{background:#555}
+pre{margin:0;padding:18px 20px;overflow-x:auto}
+code{font-family:"JetBrains Mono",monospace;font-size:14.5px;line-height:1.6;color:var(--codeink)}
+.term code{color:#cfe8cf}
+.hljs-keyword,.hljs-built_in{color:#ff9e64}.hljs-string{color:#9ece6a}.hljs-comment{color:#7f8aa3;font-style:italic}
+.hljs-number,.hljs-literal{color:#e0af68}.hljs-title,.hljs-title.function_{color:#7aa2f7}.hljs-params{color:#c0caf5}
+.hljs-attr,.hljs-property{color:#73daca}.hljs-meta{color:#bb9af7}.hljs-type{color:#2ac3de}.hljs-variable{color:#c0caf5}
+.hljs-tag,.hljs-name{color:#7aa2f7}
+table{border-collapse:collapse;width:100%;background:var(--paper);border-radius:10px;overflow:hidden;font-size:16px}
+th,td{padding:10px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{background:var(--navy);color:#fff;font-weight:600}
+td code{color:var(--ink);font-size:14px}
+.rolagem{overflow-x:auto}
+svg{width:100%;height:auto;display:block}
+svg path:not([fill]){fill:none}
+svg text{font-family:Inter,sans-serif}
+.svgbox{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px}
+.capa{justify-content:center}
+.capa h1{font-size:64px}
+.pill{display:inline-flex;gap:8px;align-items:center;border-radius:99px;padding:6px 14px;font-weight:600;font-size:15px}
+.pill.fe{background:var(--fesoft);color:var(--fe)} .pill.js{background:var(--jssoft);color:#7a5a00} .pill.db{background:var(--dbsoft);color:var(--db)}
+.steps{counter-reset:s;list-style:none;padding:0}
+.steps li{counter-increment:s;position:relative;padding-left:44px;margin:10px 0}
+.steps li::before{content:counter(s);position:absolute;left:0;top:0;width:30px;height:30px;border-radius:50%;background:var(--db);color:#fff;font-weight:700;display:grid;place-items:center;font-size:15px}
+.nav{position:fixed;bottom:0;left:0;right:0;height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;background:rgba(245,243,238,.94);border-top:1px solid var(--line);z-index:5}
+.nav button{border:1px solid var(--line);background:var(--paper);border-radius:8px;width:44px;height:36px;font-size:18px;cursor:pointer;color:var(--ink)}
+.nav button:hover{background:#ece8df}
+.cont{font:600 14px "JetBrains Mono",monospace;color:var(--muted)}
+.secao{font-size:13px;color:var(--muted);font-weight:600}
+.barra{position:fixed;top:0;left:0;height:4px;background:var(--db);z-index:6;transition:width .3s}
+@media (max-width:820px){
+  .slide{padding:28px 16px 80px}
+  h1,.capa h1{font-size:36px} h2{font-size:25px} p,li{font-size:16px} .lead{font-size:17px}
+  .grid2,.grid3{grid-template-columns:1fr}
+  code{font-size:12.5px} table{font-size:14px} th,td{padding:8px}
+  .secao{display:none}
+}
+@media print{
+  body{overflow:visible}.nav,.barra{display:none}
+  .slide{position:relative;opacity:1;transform:none;page-break-after:always;min-height:100vh}
+}
+</style>
+</head>
+<body>
+<div class="barra" id="barra"></div>
+<div class="deck" id="deck">
+
+<!-- ============================== 1. CAPA -->
+<section class="slide capa" data-secao="Abertura">
+<div class="inner" style="justify-content:center">
+  <span class="tag">Aula · Banco de dados parte 2</span>
+  <h1><br>Conectando o <span style="color:var(--fe)">frontend</span> ao <span style="color:var(--db)">banco de dados</span></h1>
+  <p class="lead">Como o clique num botão da página vira uma linha gravada no MySQL, passando pelas funções de CRUD que já escrevemos no Node.</p>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+    <span class="pill fe">🌐 HTML + fetch</span><span class="pill js">⬢ Node.js · Express</span><span class="pill db">🗄️ MySQL</span>
+  </div>
+  <p class="muted" style="margin-top:30px;font-size:15px">Use ← → (ou deslize) para navegar · F = tela cheia</p>
+</div>
+</section>
+
+<!-- ============================== 2. ROTEIRO -->
+<section class="slide" data-secao="Abertura">
+<div class="inner">
+  <span class="tag">Roteiro</span><h2>O que vamos ver</h2>
+  <div class="grid3">
+    <div class="card warn"><h3>1 · O problema</h3><p>Por que a página não consegue chamar <span class="kw">listarPacientes()</span> direto.</p></div>
+    <div class="card fe"><h3>2 · A ponte: HTTP</h3><p>Pedido e resposta, métodos, status e JSON.</p></div>
+    <div class="card js"><h3>3 · O servidor</h3><p><span class="kw">server.js</span>: rotas que chamam as funções do repo.</p></div>
+    <div class="card fe"><h3>4 · A página</h3><p><span class="kw">script.js</span>: <span class="kw">fetch</span> para pedir e o DOM para mostrar.</p></div>
+    <div class="card db"><h3>5 · O CRUD completo</h3><p>Listar, cadastrar, editar e excluir, de ponta a ponta.</p></div>
+    <div class="card warn"><h3>6 · Erros e segurança</h3><p>Status de erro, validação e o que nunca sai do servidor.</p></div>
+  </div>
+  <div class="note">Projeto completo na pasta <span class="kw">tutorial-frontend/</span>. O banco (<span class="kw">hospital</span>) e as funções de CRUD são os mesmos da parte 1; a novidade é tudo o que fica <b>entre</b> a tela e essas funções.</div>
+</div>
+</section>
+
+<!-- ============================== 3. O PROBLEMA -->
+<section class="slide" data-secao="1 · O problema">
+<div class="inner">
+  <span class="tag">1 · O problema</span><h2>A página e as funções moram em programas diferentes</h2>
+  <div class="svgbox">
+  <svg viewBox="0 0 1100 230" role="img" aria-label="Navegador e Node são programas separados">
+    <rect x="10" y="20" width="400" height="190" rx="14" fill="#f3f6fb" stroke="#b9c7dc" stroke-dasharray="6 5"/>
+    <text x="26" y="46" font-size="13" font-weight="700" fill="#3b6ea5">NAVEGADOR · no computador de quem visita</text>
+    <rect x="50" y="75" width="320" height="100" rx="10" fill="#fff" stroke="#3b6ea5" stroke-width="2"/>
+    <text x="210" y="108" text-anchor="middle" font-size="16" font-weight="700" fill="#1c2230">index.html + script.js</text>
+    <text x="210" y="132" text-anchor="middle" font-size="13" fill="#5d6679">botões, formulário, tabela</text>
+    <text x="210" y="154" text-anchor="middle" font-size="13" font-family="JetBrains Mono" fill="#c0392b">listarPacientes()  → não existe aqui</text>
+
+    <rect x="690" y="20" width="400" height="190" rx="14" fill="#fdf8ea" stroke="#d9c58a" stroke-dasharray="6 5"/>
+    <text x="706" y="46" font-size="13" font-weight="700" fill="#7a5a00">NODE · no servidor</text>
+    <rect x="720" y="75" width="200" height="100" rx="10" fill="#fff" stroke="#b8860b" stroke-width="2"/>
+    <text x="820" y="108" text-anchor="middle" font-size="15" font-weight="700">pacientesRepo.js</text>
+    <text x="820" y="132" text-anchor="middle" font-size="12.5" font-family="JetBrains Mono" fill="#7a5a00">listarPacientes()</text>
+    <text x="820" y="152" text-anchor="middle" font-size="12.5" font-family="JetBrains Mono" fill="#7a5a00">inserirPaciente()</text>
+    <path d="M920 125 H960" stroke="#0e7c66" stroke-width="2.5"/>
+    <g transform="translate(960,85)">
+      <ellipse cx="50" cy="12" rx="50" ry="12" fill="#d8f0e9" stroke="#0e7c66" stroke-width="2"/>
+      <path d="M0 12 V70 A50 12 0 0 0 100 70 V12" fill="#d8f0e9" stroke="#0e7c66" stroke-width="2"/>
+      <text x="50" y="52" text-anchor="middle" font-size="14" font-weight="700" fill="#0e7c66">MySQL</text>
+    </g>
+
+    <path d="M420 125 H680" stroke="#c0392b" stroke-width="3" stroke-dasharray="8 6"/>
+    <path d="M530 105 L570 145 M570 105 L530 145" stroke="#c0392b" stroke-width="5"/>
+    <text x="550" y="88" text-anchor="middle" font-size="14" font-weight="700" fill="#c0392b">chamar a função direto</text>
+    <text x="550" y="178" text-anchor="middle" font-size="13" fill="#5d6679">não existe esse caminho</text>
+  </svg>
+  </div>
+  <div class="grid3">
+    <div class="card warn"><h3>Memórias separadas</h3><p>Uma função só pode ser chamada por código do <b>mesmo programa</b>. O navegador não enxerga o que está dentro do Node.</p></div>
+    <div class="card warn"><h3>O navegador não fala MySQL</h3><p>O driver <span class="kw">mysql2</span> abre uma conexão TCP na porta 3306. JavaScript de página <b>só</b> faz pedidos HTTP.</p></div>
+    <div class="card warn"><h3>E a senha?</h3><p>Tudo o que vai para o navegador é visível no F12. A senha do banco ficaria exposta para qualquer visitante.</p></div>
+  </div>
+</div>
+</section>
+
+<!-- ============================== 4. PIPELINE -->
+<section class="slide" data-secao="2 · A ponte: HTTP">
+<div class="inner">
+  <span class="tag">2 · A ponte</span><h2>A solução: um servidor no meio do caminho</h2>
+  <div class="svgbox">
+  <svg viewBox="0 0 1100 320" role="img" aria-label="Pipeline do navegador até o banco">
+    <defs>
+      <marker id="seta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10z" fill="#1f3a5f"/></marker>
+      <marker id="setaV" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10z" fill="#0e7c66"/></marker>
+    </defs>
+    <!-- navegador -->
+    <rect x="10" y="20" width="270" height="220" rx="14" fill="#f3f6fb" stroke="#b9c7dc" stroke-dasharray="6 5"/>
+    <text x="24" y="44" font-size="13" font-weight="700" fill="#3b6ea5">NAVEGADOR (frontend)</text>
+    <rect x="30" y="64" width="230" height="64" rx="10" fill="#fff" stroke="#3b6ea5" stroke-width="2"/>
+    <text x="145" y="92" text-anchor="middle" font-size="15" font-weight="700">index.html</text>
+    <text x="145" y="112" text-anchor="middle" font-size="12.5" fill="#5d6679">formulário, botões, tabela</text>
+    <rect x="30" y="146" width="230" height="74" rx="10" fill="#fff" stroke="#3b6ea5" stroke-width="2"/>
+    <text x="145" y="174" text-anchor="middle" font-size="15" font-weight="700">script.js</text>
+    <text x="145" y="196" text-anchor="middle" font-size="12.5" font-family="JetBrains Mono" fill="#3b6ea5">fetch('/api/pacientes')</text>
+    <!-- http -->
+    <path d="M280 183 H400" stroke="#1f3a5f" stroke-width="3" marker-end="url(#seta)"/>
+    <text x="340" y="166" text-anchor="middle" font-size="14" font-weight="700" fill="#1f3a5f">HTTP</text>
+    <text x="340" y="204" text-anchor="middle" font-size="12" fill="#5d6679">porta 3000</text>
+    <!-- servidor -->
+    <rect x="400" y="20" width="420" height="220" rx="14" fill="#fdf8ea" stroke="#d9c58a" stroke-dasharray="6 5"/>
+    <text x="414" y="44" font-size="13" font-weight="700" fill="#7a5a00">SERVIDOR NODE (backend)</text>
+    <rect x="416" y="128" width="120" height="96" rx="10" fill="#fff" stroke="#b8860b" stroke-width="2"/>
+    <text x="476" y="160" text-anchor="middle" font-size="15" font-weight="700">server.js</text>
+    <text x="476" y="182" text-anchor="middle" font-size="12" fill="#5d6679">rotas HTTP</text>
+    <text x="476" y="200" text-anchor="middle" font-size="12" fill="#5d6679">(novo!)</text>
+    <path d="M536 176 H556" stroke="#1f3a5f" stroke-width="2.5" marker-end="url(#seta)"/>
+    <rect x="558" y="128" width="124" height="96" rx="10" fill="#fff" stroke="#b8860b" stroke-width="2"/>
+    <text x="620" y="160" text-anchor="middle" font-size="14" font-weight="700">pacientesRepo</text>
+    <text x="620" y="182" text-anchor="middle" font-size="12" fill="#5d6679">o SQL de cada</text>
+    <text x="620" y="200" text-anchor="middle" font-size="12" fill="#5d6679">operação</text>
+    <path d="M682 176 H702" stroke="#1f3a5f" stroke-width="2.5" marker-end="url(#seta)"/>
+    <rect x="704" y="128" width="100" height="96" rx="10" fill="#fff" stroke="#b8860b" stroke-width="2"/>
+    <text x="754" y="160" text-anchor="middle" font-size="15" font-weight="700">db.js</text>
+    <text x="754" y="182" text-anchor="middle" font-size="12" fill="#5d6679">pool +</text>
+    <text x="754" y="200" text-anchor="middle" font-size="12" fill="#5d6679">driver</text>
+    <text x="610" y="92" text-anchor="middle" font-size="13" fill="#7a5a00">repo e db são os mesmos da parte 1</text>
+    <path d="M560 100 H800" stroke="#d9c58a" stroke-width="2"/>
+    <!-- tcp -->
+    <path d="M820 176 H930" stroke="#1f3a5f" stroke-width="3" marker-end="url(#seta)"/>
+    <text x="875" y="160" text-anchor="middle" font-size="14" font-weight="700" fill="#1f3a5f">TCP</text>
+    <text x="875" y="197" text-anchor="middle" font-size="12" fill="#5d6679">porta 3306</text>
+    <!-- mysql -->
+    <rect x="930" y="20" width="160" height="220" rx="14" fill="#eef8f4" stroke="#a9d6c8" stroke-dasharray="6 5"/>
+    <text x="944" y="44" font-size="13" font-weight="700" fill="#0e7c66">BANCO</text>
+    <g transform="translate(955,130)">
+      <ellipse cx="55" cy="12" rx="55" ry="12" fill="#d8f0e9" stroke="#0e7c66" stroke-width="2"/>
+      <path d="M0 12 V78 A55 12 0 0 0 110 78 V12" fill="#d8f0e9" stroke="#0e7c66" stroke-width="2"/>
+      <text x="55" y="56" text-anchor="middle" font-size="15" font-weight="700" fill="#0e7c66">MySQL</text>
+    </g>
+    <!-- volta -->
+    <path d="M1010 244 C 1010 300, 760 286, 560 286 S 150 300, 145 244" stroke="#0e7c66" stroke-width="2.5" stroke-dasharray="7 5" marker-end="url(#setaV)"/>
+    <text x="560" y="276" text-anchor="middle" font-size="14" font-weight="700" fill="#0e7c66">VOLTA: linhas da tabela → JSON → a página redesenha a tela</text>
+    <!-- números -->
+    <g font-size="13" font-weight="800" fill="#fff">
+      <circle cx="38" cy="146" r="13" fill="#1f3a5f"/><text x="38" y="151" text-anchor="middle">1</text>
+      <circle cx="340" cy="136" r="13" fill="#1f3a5f"/><text x="340" y="141" text-anchor="middle">2</text>
+      <circle cx="424" cy="128" r="13" fill="#1f3a5f"/><text x="424" y="133" text-anchor="middle">3</text>
+      <circle cx="566" cy="128" r="13" fill="#1f3a5f"/><text x="566" y="133" text-anchor="middle">4</text>
+      <circle cx="875" cy="130" r="13" fill="#1f3a5f"/><text x="875" y="135" text-anchor="middle">5</text>
+      <circle cx="560" cy="304" r="13" fill="#0e7c66"/><text x="560" y="309" text-anchor="middle">6</text>
+    </g>
+  </svg>
+  </div>
+  <p class="muted"><b>1</b> o clique chama uma função do script.js · <b>2</b> o <span class="kw">fetch</span> manda um pedido HTTP · <b>3</b> a rota certa recebe o pedido · <b>4</b> a rota chama a função do repo · <b>5</b> o driver fala com o MySQL · <b>6</b> a resposta volta em JSON e a página mostra.</p>
+</div>
+</section>
+
+<!-- ============================== 5. ANALOGIA -->
+<section class="slide" data-secao="2 · A ponte: HTTP">
+<div class="inner">
+  <span class="tag">2 · A ponte</span><h2>Analogia: o restaurante agora tem delivery</h2>
+  <p class="lead">Na parte 1, o cliente já estava dentro do restaurante. Agora ele está em casa e precisa de um jeito de fazer o pedido chegar.</p>
+  <table>
+    <tr><th>Restaurante</th><th>Sistema</th></tr>
+    <tr><td>Cliente em casa</td><td><b>Navegador</b> (index.html + script.js)</td></tr>
+    <tr><td>Ligação telefônica</td><td><b>HTTP</b>: o único canal entre a casa e o restaurante</td></tr>
+    <tr><td>Atendente do telefone</td><td><b>server.js</b>: recebe o pedido e repassa para dentro</td></tr>
+    <tr><td>Cardápio</td><td><b>Rotas</b>: só dá para pedir o que está na lista (<span class="kw">GET /api/pacientes</span>…)</td></tr>
+    <tr><td>Garçom e comanda</td><td>Funções do repo + driver (parte 1)</td></tr>
+    <tr><td>Cozinha</td><td>Servidor MySQL</td></tr>
+    <tr><td>Embalagem do delivery</td><td><b>JSON</b>: o formato em que a resposta viaja</td></tr>
+  </table>
+  <div class="note">O cliente em casa não entra na cozinha <b>nem</b> fala com o garçom. Ele só conhece o telefone e o cardápio. Para a página, o banco de dados é invisível: ela só conhece as rotas.</div>
+</div>
+</section>
+
+<!-- ============================== 6. HTTP -->
+<section class="slide" data-secao="2 · A ponte: HTTP">
+<div class="inner">
+  <span class="tag">2 · A ponte</span><h2>HTTP: um pedido, uma resposta</h2>
+  <div class="grid2">
+    <div class="code term"><span class="lbl fe">pedido (navegador → servidor)</span><pre><code class="nohighlight">POST /api/pacientes HTTP/1.1
+Host: localhost:3000
+Content-Type: application/json
+
+{"nome":"Diego Rocha","cpf":"44455566677"}</code></pre></div>
+    <div class="code term"><span class="lbl js">resposta (servidor → navegador)</span><pre><code class="nohighlight">HTTP/1.1 201 Created
+Content-Type: application/json
+
+{"id":4}</code></pre></div>
+  </div>
+  <div class="grid3">
+    <div class="card fe"><h3>Método + URL</h3><p><b>O que</b> fazer e <b>com o quê</b>. <span class="kw">POST /api/pacientes</span> = “crie um paciente”.</p></div>
+    <div class="card fe"><h3>Corpo (body)</h3><p>Os dados que acompanham o pedido, em texto JSON. <span class="kw">GET</span> e <span class="kw">DELETE</span> não levam corpo.</p></div>
+    <div class="card js"><h3>Status</h3><p>O número que resume o resultado: <span class="kw">2xx</span> deu certo, <span class="kw">4xx</span> o pedido estava errado, <span class="kw">5xx</span> o servidor falhou.</p></div>
+  </div>
+  <p class="muted">Veja isso ao vivo: no navegador, F12 → aba <b>Rede</b> (Network). Cada linha é um pedido; clique para ver método, status, corpo e resposta.</p>
+</div>
+</section>
+
+<!-- ============================== 7. CRUD x HTTP -->
+<section class="slide" data-secao="2 · A ponte: HTTP">
+<div class="inner">
+  <span class="tag">2 · A ponte</span><h2>Cada ação da tela vira um pedido diferente</h2>
+  <div class="rolagem">
+  <table>
+    <tr><th>Na tela</th><th>Pedido HTTP</th><th>Função do repo</th><th>SQL</th><th>Resposta</th></tr>
+    <tr><td>Abrir a página</td><td><code>GET /api/pacientes</code></td><td><code>listarPacientes()</code></td><td><code>SELECT</code></td><td><code>200</code> + array</td></tr>
+    <tr><td>Botão Cadastrar</td><td><code>POST /api/pacientes</code></td><td><code>inserirPaciente()</code></td><td><code>INSERT</code></td><td><code>201</code> + <code>{id}</code></td></tr>
+    <tr><td>Botão Editar telefone</td><td><code>PUT /api/pacientes/4</code></td><td><code>atualizarTelefone()</code></td><td><code>UPDATE</code></td><td><code>200</code> ou <code>404</code></td></tr>
+    <tr><td>Botão Excluir</td><td><code>DELETE /api/pacientes/4</code></td><td><code>excluirPaciente()</code></td><td><code>DELETE</code></td><td><code>200</code> ou <code>404</code></td></tr>
+  </table>
+  </div>
+  <div class="grid2">
+    <div class="card db"><h3>A URL diz “quem”</h3><p><span class="kw">/api/pacientes</span> é a lista inteira. <span class="kw">/api/pacientes/4</span> é o paciente de id 4.</p></div>
+    <div class="card db"><h3>O método diz “o quê”</h3><p>A mesma URL com métodos diferentes faz coisas diferentes: <span class="kw">GET</span> lê, <span class="kw">POST</span> cria, <span class="kw">PUT</span> altera, <span class="kw">DELETE</span> apaga.</p></div>
+  </div>
+  <div class="note">Esse conjunto de rotas é a <b>API</b> do sistema: o “cardápio” que o frontend pode usar. As funções do repo não mudaram em nada.</div>
+</div>
+</section>
+
+<!-- ============================== 8. JSON -->
+<section class="slide" data-secao="2 · A ponte: HTTP">
+<div class="inner">
+  <span class="tag">2 · A ponte</span><h2>JSON: a língua que os dois lados entendem</h2>
+  <p class="lead">Pela rede só passa texto. Então o objeto vira texto para viajar e volta a ser objeto na chegada.</p>
+  <div class="svgbox">
+  <svg viewBox="0 0 1100 190" role="img" aria-label="Objeto vira JSON e volta a ser objeto">
+    <defs><marker id="sj" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10z" fill="#1f3a5f"/></marker></defs>
+    <g font-size="13">
+      <rect x="10" y="50" width="250" height="90" rx="10" fill="#14181f"/>
+      <text x="24" y="76" fill="#7f8aa3" font-family="JetBrains Mono" font-size="12">// objeto no navegador</text>
+      <text x="24" y="100" fill="#c0caf5" font-family="JetBrains Mono">{ nome: 'Diego',</text>
+      <text x="24" y="122" fill="#c0caf5" font-family="JetBrains Mono">  cpf: '444…' }</text>
+      <path d="M260 95 H400" stroke="#1f3a5f" stroke-width="2.5" marker-end="url(#sj)"/>
+      <text x="330" y="82" text-anchor="middle" font-family="JetBrains Mono" font-size="12" font-weight="600" fill="#3b6ea5">JSON.stringify()</text>
+      <rect x="402" y="50" width="296" height="90" rx="10" fill="#fff" stroke="#1f3a5f" stroke-width="2" stroke-dasharray="6 4"/>
+      <text x="550" y="76" text-anchor="middle" fill="#5d6679" font-size="12">texto viajando pela rede</text>
+      <text x="550" y="108" text-anchor="middle" fill="#1c2230" font-family="JetBrains Mono">'{"nome":"Diego","cpf":"444…"}'</text>
+      <path d="M700 95 H838" stroke="#1f3a5f" stroke-width="2.5" marker-end="url(#sj)"/>
+      <text x="769" y="82" text-anchor="middle" font-family="JetBrains Mono" font-size="12" font-weight="600" fill="#7a5a00">express.json()</text>
+      <rect x="840" y="50" width="250" height="90" rx="10" fill="#14181f"/>
+      <text x="854" y="76" fill="#7f8aa3" font-family="JetBrains Mono" font-size="12">// req.body no servidor</text>
+      <text x="854" y="100" fill="#c0caf5" font-family="JetBrains Mono">{ nome: 'Diego',</text>
+      <text x="854" y="122" fill="#c0caf5" font-family="JetBrains Mono">  cpf: '444…' }</text>
+      <text x="550" y="172" text-anchor="middle" fill="#0e7c66" font-weight="700" font-size="14">Na volta é igual: res.json(dados) no servidor → await resposta.json() no navegador</text>
+      <text x="135" y="34" text-anchor="middle" font-weight="700" fill="#3b6ea5">NAVEGADOR</text>
+      <text x="965" y="34" text-anchor="middle" font-weight="700" fill="#7a5a00">SERVIDOR</text>
+    </g>
+  </svg>
+  </div>
+  <div class="grid2">
+    <div class="card fe"><h3>No navegador</h3><p>Ida: <span class="kw">body: JSON.stringify(dados)</span><br>Volta: <span class="kw">await resposta.json()</span></p></div>
+    <div class="card js"><h3>No servidor</h3><p>Ida: <span class="kw">app.use(express.json())</span> preenche <span class="kw">req.body</span><br>Volta: <span class="kw">res.json(dados)</span></p></div>
+  </div>
+  <div class="note fe">O cabeçalho <span class="kw">Content-Type: application/json</span> avisa o outro lado de que o texto é JSON. Sem ele, o <span class="kw">express.json()</span> ignora o corpo e <span class="kw">req.body</span> fica vazio.</div>
+</div>
+</section>
+
+<!-- ============================== 9. ESTRUTURA -->
+<section class="slide" data-secao="3 · O servidor">
+<div class="inner">
+  <span class="tag">3 · O servidor</span><h2>O projeto: o que é novo e o que já existia</h2>
+  <div class="grid2">
+    <div class="code term"><span class="lbl sh">tutorial-frontend/</span><pre><code class="nohighlight">tutorial-frontend/
+├── .env.exemplo           credenciais do banco
+├── database/
+│   ├── schema.sql         igual à parte 1
+│   └── seed.sql           igual à parte 1
+├── backend/               roda no NODE
+│   ├── db.js              conexão + pool
+│   ├── pacientesRepo.js   SQL de cada operação
+│   └── server.js          rotas HTTP      ← novo
+└── frontend/              roda no NAVEGADOR
+    ├── index.html         a tela          ← novo
+    ├── script.js          fetch + tabela  ← novo
+    └── style.css          aparência       ← novo</code></pre></div>
+    <div class="svgbox">
+    <svg viewBox="0 0 460 400" role="img" aria-label="Camadas do projeto">
+      <defs><marker id="ly" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10z" fill="#1f3a5f"/></marker></defs>
+      <g font-size="14" text-anchor="middle">
+        <rect x="40" y="6" width="380" height="56" rx="10" fill="#dde8f5" stroke="#3b6ea5"/><text x="230" y="31" font-weight="700" fill="#3b6ea5">página  (index.html + script.js)</text><text x="230" y="50" font-size="12" fill="#5d6679">“o usuário clicou em Cadastrar”</text>
+        <path d="M230 62 V84" stroke="#1f3a5f" stroke-width="2" marker-end="url(#ly)"/><text x="262" y="78" font-size="11" font-weight="700" fill="#1f3a5f">HTTP</text>
+        <rect x="40" y="86" width="380" height="56" rx="10" fill="#fff" stroke="#b8860b" stroke-width="2"/><text x="230" y="111" font-weight="700" fill="#7a5a00">server.js  (rotas)</text><text x="230" y="130" font-size="12" fill="#5d6679">traduz pedido HTTP em chamada de função</text>
+        <path d="M230 142 V164" stroke="#1f3a5f" stroke-width="2" marker-end="url(#ly)"/>
+        <rect x="40" y="166" width="380" height="56" rx="10" fill="#f7ecd0" stroke="#b8860b"/><text x="230" y="191" font-weight="700" fill="#7a5a00">pacientesRepo.js</text><text x="230" y="210" font-size="12" fill="#5d6679">sabe O SQL de cada operação</text>
+        <path d="M230 222 V244" stroke="#1f3a5f" stroke-width="2" marker-end="url(#ly)"/>
+        <rect x="40" y="246" width="380" height="56" rx="10" fill="#d8f0e9" stroke="#0e7c66"/><text x="230" y="271" font-weight="700" fill="#0e7c66">db.js</text><text x="230" y="290" font-size="12" fill="#5d6679">sabe COMO falar com o banco</text>
+        <path d="M230 302 V324" stroke="#1f3a5f" stroke-width="2" marker-end="url(#ly)"/>
+        <rect x="40" y="326" width="380" height="56" rx="10" fill="#0e7c66"/><text x="230" y="352" font-weight="700" fill="#fff">MySQL · banco hospital</text><text x="230" y="371" font-size="12" fill="#d8f0e9">guarda e protege os dados</text>
+      </g>
+    </svg>
+    </div>
+  </div>
+  <div class="note">Na parte 1, quem chamava o repo era o <span class="kw">main.js</span>, um roteiro fixo. Agora quem chama é o <span class="kw">server.js</span>, toda vez que chega um pedido da página. Cada camada só conversa com a vizinha.</div>
+</div>
+</section>
+
+<!-- ============================== 10. SERVER BASE -->
+<section class="slide" data-secao="3 · O servidor">
+<div class="inner">
+  <span class="tag">3 · O servidor</span><h2><span class="kw" style="font-size:.85em">server.js</span>: um programa que fica escutando</h2>
+  <div class="grid2">
+    <div class="code"><span class="lbl js">backend/server.js</span><pre><code class="language-javascript">const path = require('path');
+const express = require('express');
+const repo = require('./pacientesRepo');
+const { testarConexao } = require('./db');
+
+const app = express();
+
+// lê o JSON que a página envia → req.body
+app.use(express.json());
+
+// entrega index.html, script.js e style.css
+app.use(express.static(
+  path.join(__dirname, '..', 'frontend')));
+
+// ... as rotas entram aqui ...
+
+const PORTA = 3000;
+app.listen(PORTA, async () => {
+  console.log(
+    `Servidor no ar: abra http://localhost:${PORTA}`);
+  await testarConexao();
+});</code></pre></div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="code term"><span class="lbl sh">terminal</span><pre><code class="nohighlight">$ cd backend
+$ npm install
+$ node server.js
+Servidor no ar: abra http://localhost:3000
+[OK] Conectado ao banco 'hospital'</code></pre></div>
+      <div class="card js"><h3>Express</h3><p>Biblioteca que cuida do HTTP: recebe os pedidos e chama a função que você ligou a cada rota.</p></div>
+      <div class="card js"><h3>listen(3000)</h3><p>O programa <b>não termina</b>: fica esperando pedidos na porta 3000. Por isso aqui não tem <span class="kw">pool.end()</span>. Para parar: Ctrl+C.</p></div>
+      <div class="card fe"><h3>express.static</h3><p>O mesmo servidor entrega a página. Por isso abrimos <span class="kw">http://localhost:3000</span>, e não o arquivo com dois cliques.</p></div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ============================== 11. READ -->
+<section class="slide" data-secao="5 · CRUD">
+<div class="inner">
+  <span class="tag">CRUD · Read</span><h2>Listar: a página pede, o servidor responde</h2>
+  <div class="grid2">
+    <div class="code"><span class="lbl fe">frontend/script.js · navegador</span><pre><code class="language-javascript">async function carregarPacientes() {
+  const resposta = await fetch('/api/pacientes');
+  const pacientes = await resposta.json();
+
+  corpoTabela.innerHTML = '';
+  for (const p of pacientes) {
+    const linha = corpoTabela.insertRow();
+    linha.insertCell().textContent = p.id;
+    linha.insertCell().textContent = p.nome;
+    linha.insertCell().textContent = p.cpf;
+    // ... demais colunas e botões
+  }
+}
+
+carregarPacientes();  // ao abrir a página</code></pre></div>
+    <div class="code"><span class="lbl js">backend/server.js · Node</span><pre><code class="language-javascript">app.get('/api/pacientes', async (req, res) => {
+  const pacientes = await repo.listarPacientes();
+  res.json(pacientes);
+});
+
+
+
+
+// backend/pacientesRepo.js (parte 1)
+async function listarPacientes() {
+  const [rows] = await pool.execute(
+    'SELECT id, nome, cpf, data_nascimento, telefone ' +
+    'FROM pacientes ORDER BY id');
+  return rows;
+}</code></pre></div>
+  </div>
+  <div class="grid3">
+    <div class="card fe"><h3>fetch(url)</h3><p>Sem mais nada, faz um <span class="kw">GET</span>. É assíncrono como o banco: precisa de <span class="kw">await</span>.</p></div>
+    <div class="card js"><h3>app.get(url, função)</h3><p>“Quando chegar um GET nesta URL, rode esta função.” <span class="kw">req</span> = o pedido, <span class="kw">res</span> = a resposta.</p></div>
+    <div class="card db"><h3>O array faz a viagem toda</h3><p><span class="kw">rows</span> do MySQL → <span class="kw">res.json</span> → <span class="kw">resposta.json()</span> → linhas da tabela.</p></div>
+  </div>
+  <p class="muted">No projeto, o <span class="kw">fetch</span> fica dentro de uma função auxiliar <span class="kw">pedir(método, url, dados)</span> para não repetir código. Ela aparece no slide de erros.</p>
+</div>
+</section>
+
+<!-- ============================== 12. CREATE -->
+<section class="slide" data-secao="5 · CRUD">
+<div class="inner">
+  <span class="tag">CRUD · Create</span><h2>Cadastrar: os dados do formulário viajam no corpo</h2>
+  <div class="grid2">
+    <div class="code"><span class="lbl fe">frontend/script.js · navegador</span><pre><code class="language-javascript">form.addEventListener('submit', async (evento) => {
+  evento.preventDefault();  // não recarrega a página
+
+  // { nome: '...', cpf: '...', ... }
+  const dados = Object.fromEntries(new FormData(form));
+
+  const resposta = await fetch('/api/pacientes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(dados),
+  });
+  const { id } = await resposta.json();
+
+  avisar(`Paciente cadastrado com id ${id}`);
+  await carregarPacientes();  // atualiza a tabela
+});</code></pre></div>
+    <div class="code"><span class="lbl js">backend/server.js · Node</span><pre><code class="language-javascript">app.post('/api/pacientes', async (req, res) => {
+  const { nome, cpf, data_nascimento, telefone }
+    = req.body ?? {};
+
+  // confere de novo o que a página mandou
+  if (!nome || !/^\d{11}$/.test(cpf ?? '')) {
+    return res.status(400).json(
+      { erro: 'Informe o nome e um CPF com 11 números' });
+  }
+
+  const id = await repo.inserirPaciente(
+    nome, cpf, data_nascimento || null, telefone || null);
+
+  res.status(201).json({ id });  // 201 = criado
+});</code></pre></div>
+  </div>
+  <div class="grid3">
+    <div class="card fe"><h3>preventDefault()</h3><p>Sem isso, o navegador envia o formulário do jeito antigo e recarrega a página.</p></div>
+    <div class="card js"><h3>req.body</h3><p>O objeto que a página mandou, já convertido pelo <span class="kw">express.json()</span>.</p></div>
+    <div class="card db"><h3>Depois de gravar</h3><p>A tela não muda sozinha: a página pede a lista de novo para mostrar o novo paciente.</p></div>
+  </div>
+</div>
+</section>
+
+<!-- ============================== 13. UPDATE / DELETE -->
+<section class="slide" data-secao="5 · CRUD">
+<div class="inner">
+  <span class="tag">CRUD · Update / Delete</span><h2>Editar e excluir: o id vai na URL</h2>
+  <div class="grid2">
+    <div class="code"><span class="lbl fe">frontend/script.js · navegador</span><pre><code class="language-javascript">async function editarTelefone(paciente) {
+  const telefone = prompt('Novo telefone:');
+  if (telefone === null) return;   // cancelou
+
+  await pedir('PUT', `/api/pacientes/${paciente.id}`,
+              { telefone });
+  await carregarPacientes();
+}
+
+async function excluir(paciente) {
+  if (!confirm(`Excluir ${paciente.nome}?`)) return;
+
+  await pedir('DELETE', `/api/pacientes/${paciente.id}`);
+  await carregarPacientes();
+}</code></pre></div>
+    <div class="code"><span class="lbl js">backend/server.js · Node</span><pre><code class="language-javascript">app.put('/api/pacientes/:id', async (req, res) => {
+  const { telefone } = req.body ?? {};
+  const alterados = await repo.atualizarTelefone(
+    req.params.id, telefone || null);
+
+  if (alterados === 0)
+    return res.status(404).json(
+      { erro: 'Paciente não encontrado' });
+  res.json({ mensagem: 'Telefone atualizado' });
+});
+
+app.delete('/api/pacientes/:id', async (req, res) => {
+  const removidos = await repo.excluirPaciente(
+    req.params.id);
+
+  if (removidos === 0)
+    return res.status(404).json(
+      { erro: 'Paciente não encontrado' });
+  res.json({ mensagem: 'Paciente excluído' });
+});</code></pre></div>
+  </div>
+  <div class="grid3">
+    <div class="card js"><h3>:id e req.params</h3><p><span class="kw">:id</span> é um “buraco” na URL. Pedido para <span class="kw">/api/pacientes/4</span> → <span class="kw">req.params.id</span> vale <span class="kw">'4'</span>.</p></div>
+    <div class="card db"><h3>affectedRows = 0</h3><p>Lembra da parte 1? Não é erro do banco: o id não existe. Aqui isso vira o status <span class="kw">404</span>.</p></div>
+    <div class="card fe"><h3>Quem é o paciente?</h3><p>Cada botão da tabela é criado já sabendo o paciente da sua linha. É dele que sai o id da URL.</p></div>
+  </div>
+</div>
+</section>
+
+<!-- ============================== 14. A VIAGEM DE UM CLIQUE -->
+<section class="slide" data-secao="5 · CRUD">
+<div class="inner">
+  <span class="tag">CRUD · de ponta a ponta</span><h2>A viagem completa de um clique em “Cadastrar”</h2>
+  <div class="svgbox">
+  <svg viewBox="0 0 1100 400" role="img" aria-label="Sequência de mensagens ao cadastrar">
+    <defs>
+      <marker id="hd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10z" fill="#3b6ea5"/></marker>
+      <marker id="hj" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10z" fill="#b8860b"/></marker>
+      <marker id="hv" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10z" fill="#0e7c66"/></marker>
+    </defs>
+    <rect x="40" y="10" width="220" height="44" rx="8" fill="#3b6ea5"/><text x="150" y="38" text-anchor="middle" fill="#fff" font-weight="700">Navegador · script.js</text>
+    <rect x="440" y="10" width="220" height="44" rx="8" fill="#b8860b"/><text x="550" y="38" text-anchor="middle" fill="#fff" font-weight="700">Node · server.js + repo</text>
+    <rect x="840" y="10" width="220" height="44" rx="8" fill="#0e7c66"/><text x="950" y="38" text-anchor="middle" fill="#fff" font-weight="700">MySQL</text>
+    <line x1="150" y1="54" x2="150" y2="390" stroke="#b9c7dc" stroke-width="2" stroke-dasharray="5 5"/>
+    <line x1="550" y1="54" x2="550" y2="390" stroke="#d9c58a" stroke-width="2" stroke-dasharray="5 5"/>
+    <line x1="950" y1="54" x2="950" y2="390" stroke="#a9d6c8" stroke-width="2" stroke-dasharray="5 5"/>
+    <g font-size="13.5" font-weight="600">
+      <path d="M150 100 H545" stroke="#3b6ea5" stroke-width="2.2" marker-end="url(#hd)"/>
+      <text x="350" y="92" text-anchor="middle" fill="#3b6ea5">① POST /api/pacientes + {"nome":"Diego", …}</text>
+      <path d="M550 150 H945" stroke="#b8860b" stroke-width="2.2" marker-end="url(#hj)"/>
+      <text x="750" y="142" text-anchor="middle" fill="#7a5a00">② INSERT INTO pacientes … VALUES (?, ?, ?, ?)</text>
+      <path d="M950 200 H555" stroke="#0e7c66" stroke-width="2.2" marker-end="url(#hv)"/>
+      <text x="750" y="192" text-anchor="middle" fill="#0e7c66">③ OK, insertId = 4</text>
+      <path d="M550 250 H155" stroke="#b8860b" stroke-width="2.2" marker-end="url(#hj)"/>
+      <text x="350" y="242" text-anchor="middle" fill="#7a5a00">④ 201 Created + {"id": 4}</text>
+      <path d="M150 300 H545" stroke="#3b6ea5" stroke-width="2.2" marker-end="url(#hd)"/>
+      <text x="350" y="292" text-anchor="middle" fill="#3b6ea5">⑤ GET /api/pacientes  (buscar a lista atualizada)</text>
+      <path d="M550 322 H945" stroke="#b8860b" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#hj)"/>
+      <path d="M950 338 H555" stroke="#0e7c66" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#hv)"/>
+      <text x="750" y="358" text-anchor="middle" fill="#5d6679" font-weight="500" font-size="12.5">SELECT … e as linhas voltam</text>
+      <path d="M550 372 H155" stroke="#b8860b" stroke-width="2.2" marker-end="url(#hj)"/>
+      <text x="350" y="364" text-anchor="middle" fill="#7a5a00">⑥ 200 OK + [ {…}, {…}, {…}, {…} ]</text>
+    </g>
+  </svg>
+  </div>
+  <div class="grid2">
+    <div class="note fe">Um clique = <b>dois</b> pedidos HTTP: um para gravar e outro para buscar a lista de novo. A página nunca “adivinha” o que está no banco; ela sempre pergunta.</div>
+    <div class="note js">Entre ① e ④ a página fica esperando no <span class="kw">await</span>. Enquanto isso o servidor também espera o banco no <span class="kw">await</span> dele. São duas esperas encadeadas.</div>
+  </div>
+</div>
+</section>
+
+<!-- ============================== 15. ERROS -->
+<section class="slide" data-secao="6 · Erros e segurança">
+<div class="inner">
+  <span class="tag">6 · Erros</span><h2>Quando dá errado: o status conta a história</h2>
+  <div class="grid2">
+    <div class="code"><span class="lbl js">backend/server.js · no final</span><pre><code class="language-javascript">// qualquer erro lançado nas rotas cai aqui
+app.use((err, req, res, next) => {
+  if (err.code === 'ER_DUP_ENTRY') {
+    return res.status(409).json(
+      { erro: 'Este CPF já está cadastrado' });
+  }
+  console.error(err);  // detalhe só no terminal
+  res.status(500).json({ erro: 'Erro no servidor' });
+});</code></pre></div>
+    <div class="code"><span class="lbl fe">frontend/script.js</span><pre><code class="language-javascript">async function pedir(metodo, url, dados) {
+  const resposta = await fetch(url, {
+    method: metodo,
+    headers: { 'Content-Type': 'application/json' },
+    body: dados ? JSON.stringify(dados) : undefined,
+  });
+  const corpo = await resposta.json();
+
+  if (!resposta.ok) throw new Error(corpo.erro);
+  return corpo;
+}</code></pre></div>
+  </div>
+  <div class="rolagem">
+  <table>
+    <tr><th>Status</th><th>Significa</th><th>No nosso projeto</th></tr>
+    <tr><td><code>200</code> / <code>201</code></td><td>deu certo / criado</td><td>listar, editar, excluir / cadastrar</td></tr>
+    <tr><td><code>400</code></td><td>pedido mal feito</td><td>faltou o nome ou o CPF não tem 11 números</td></tr>
+    <tr><td><code>404</code></td><td>não encontrado</td><td>id que não existe (<code>affectedRows = 0</code>)</td></tr>
+    <tr><td><code>409</code></td><td>conflito</td><td>CPF repetido: o <code>UNIQUE</code> do banco barrou (<code>ER_DUP_ENTRY</code>)</td></tr>
+    <tr><td><code>500</code></td><td>erro no servidor</td><td>banco desligado, SQL errado, bug no código</td></tr>
+  </table>
+  </div>
+  <div class="note warn"><b>Pegadinha do fetch:</b> ele só lança erro se a <b>rede</b> falhar. Um 404 ou 500 chega como resposta normal. Por isso o <span class="kw">if (!resposta.ok)</span>: sem ele, a página mostraria “sucesso” mesmo com o CPF recusado.</div>
+</div>
+</section>
+
+<!-- ============================== 16. SEGURANÇA -->
+<section class="slide" data-secao="6 · Erros e segurança">
+<div class="inner">
+  <span class="tag">6 · Segurança</span><h2>O que cada lado pode e não pode saber</h2>
+  <div class="grid2">
+    <div class="card db"><h3>A senha do banco nunca sai do servidor</h3><p>O <span class="kw">.env</span> e o <span class="kw">db.js</span> ficam na pasta <span class="kw">backend/</span>. A página só recebe o que as rotas devolvem. Confira no F12: não há senha em lugar nenhum.</p></div>
+    <div class="card warn"><h3>Valide de novo no servidor</h3><p>O <span class="kw">required</span> do HTML ajuda o usuário, mas qualquer pessoa pode mandar um pedido direto, sem passar pela página. A conferência que vale é a do <span class="kw">server.js</span>.</p></div>
+    <div class="card db"><h3>Os “?” continuam protegendo</h3><p>O que vem em <span class="kw">req.body</span> e <span class="kw">req.params</span> é valor de fora. Ele entra no SQL pelo placeholder, nunca concatenado. SQL injection continua impossível.</p></div>
+    <div class="card warn"><h3>textContent, não innerHTML</h3><p>Se alguém cadastrar o nome <span class="kw">&lt;script&gt;…</span>, o <span class="kw">innerHTML</span> executaria esse código na tela dos outros. Com <span class="kw">textContent</span>, vira só texto.</p></div>
+  </div>
+  <div class="code term"><span class="lbl sh">pedido feito “por fora” da página</span><pre><code class="nohighlight">$ curl -X POST http://localhost:3000/api/pacientes \
+       -H "Content-Type: application/json" -d '{"nome":"Sem CPF","cpf":"123"}'
+{"erro":"Informe o nome e um CPF com 11 números"}</code></pre></div>
+  <p class="muted">Regra geral: o frontend cuida da <b>experiência</b>; o backend cuida das <b>regras</b>; o banco é a última linha de defesa.</p>
+</div>
+</section>
+
+<!-- ============================== 17. RODANDO -->
+<section class="slide" data-secao="Na prática">
+<div class="inner">
+  <span class="tag">Na prática</span><h2>Rodando na sua máquina</h2>
+  <div class="grid2">
+    <div>
+      <ol class="steps">
+        <li>MySQL ligado. Se ainda não fez na parte 1, rode <span class="kw">schema.sql</span> e <span class="kw">seed.sql</span> como root.</li>
+        <li>Copie <span class="kw">.env.exemplo</span> → <span class="kw">.env</span> e ajuste usuário e senha.</li>
+        <li><span class="kw">cd backend</span> · <span class="kw">npm install</span> · <span class="kw">node server.js</span></li>
+        <li>Abra <span class="kw">http://localhost:3000</span> no navegador.</li>
+        <li>F12 → aba <b>Rede</b>. Cadastre, edite e exclua, vendo cada pedido passar.</li>
+        <li>Confira no MySQL: <span class="kw">SELECT * FROM pacientes;</span></li>
+      </ol>
+      <div class="note warn" style="margin-top:12px">Não abra o <span class="kw">index.html</span> com dois cliques. Em <span class="kw">file://</span> não existe servidor para responder a <span class="kw">/api/pacientes</span>, e a página mostra “Não foi possível falar com o servidor”.</div>
+    </div>
+    <div class="code term"><span class="lbl sh">saída real, testando as rotas com curl</span><pre><code class="nohighlight">$ curl localhost:3000/api/pacientes
+[{"id":1,"nome":"Ana Souza","cpf":"11122233344",
+  "data_nascimento":"1990-04-12",
+  "telefone":"(44) 99901-0001"}, ...]          [200]
+
+$ curl -X POST ... -d '{"nome":"Diego Rocha",
+    "cpf":"44455566677"}'
+{"id":4}                                       [201]
+
+$ curl -X POST ...   (mesmo CPF de novo)
+{"erro":"Este CPF já está cadastrado"}         [409]
+
+$ curl -X PUT ... -d '{"telefone":"(44) 98888-7777"}' \
+       localhost:3000/api/pacientes/4
+{"mensagem":"Telefone atualizado"}             [200]
+
+$ curl -X PUT ... localhost:3000/api/pacientes/999
+{"erro":"Paciente não encontrado"}             [404]
+
+$ curl -X DELETE localhost:3000/api/pacientes/4
+{"mensagem":"Paciente excluído"}               [200]</code></pre></div>
+  </div>
+</div>
+</section>
+
+<!-- ============================== 18. CHECKLIST -->
+<section class="slide" data-secao="Fechamento">
+<div class="inner">
+  <span class="tag">Fechamento</span><h2>Checklist da conversa entre frontend e banco</h2>
+  <div class="grid2">
+    <ul class="steps">
+      <li>A página <b>nunca</b> fala com o banco: ela só faz pedidos HTTP.</li>
+      <li>Cada operação do CRUD tem a sua <b>rota</b> (método + URL).</li>
+      <li>A rota só traduz: lê o pedido, chama o <b>repo</b>, devolve JSON.</li>
+      <li>Dados viajam em <b>JSON</b> nos dois sentidos.</li>
+    </ul>
+    <ul class="steps" style="counter-reset:s 4">
+      <li>O servidor responde com o <b>status</b> certo (201, 400, 404, 409, 500).</li>
+      <li>A página confere <span class="kw">resposta.ok</span> e mostra o erro ao usuário.</li>
+      <li>Validação que vale é a do <b>servidor</b>; senha fica no <b>.env</b>.</li>
+      <li>Depois de gravar, a página <b>busca a lista de novo</b>.</li>
+    </ul>
+  </div>
+  <div class="note">O caminho é sempre o mesmo, em qualquer sistema web: <b>tela → fetch → rota → função → SQL → banco</b>, e a resposta volta pelo mesmo caminho.</div>
+</div>
+</section>
+
+<!-- ============================== 19. EXERCÍCIOS -->
+<section class="slide" data-secao="Fechamento">
+<div class="inner">
+  <span class="tag">Exercícios</span><h2>Agora é com vocês</h2>
+  <div class="grid2">
+    <div class="card db"><h3>1 · Busca por nome</h3><p>Crie a rota <span class="kw">GET /api/pacientes/busca?nome=ana</span> usando o <span class="kw">buscarPorNome</span> da parte 1 (<span class="kw">req.query.nome</span>) e um campo de busca na página.</p></div>
+    <div class="card db"><h3>2 · Editar o nome</h3><p>Hoje só o telefone muda. Faça o <span class="kw">PUT</span> aceitar também o nome: nova função no repo, rota e tela.</p></div>
+    <div class="card warn"><h3>3 · Quebre de propósito</h3><p>Desligue o MySQL com o servidor no ar e clique em Cadastrar. Que status aparece na aba Rede? O que a página mostra?</p></div>
+    <div class="card warn"><h3>4 · Valide o id</h3><p>Peça <span class="kw">DELETE /api/pacientes/abc</span>. Que status volta? Faça a rota responder <span class="kw">400</span> quando o id não for um número.</p></div>
+    <div class="card fe"><h3>5 · Tire o resposta.ok</h3><p>Comente o <span class="kw">if (!resposta.ok)</span> e cadastre um CPF repetido. O que a página diz? Por quê?</p></div>
+    <div class="card js"><h3>6 · Consultas</h3><p>Crie <span class="kw">GET /api/consultas</span> com o JOIN da parte 1 e mostre o resultado em uma segunda tabela.</p></div>
+  </div>
+</div>
+</section>
+
+</div>
+
+<nav class="nav">
+  <button id="ant" aria-label="Anterior">←</button>
+  <span class="secao" id="secao"></span>
+  <span class="cont" id="cont"></span>
+  <button id="prox" aria-label="Próximo">→</button>
+</nav>
+
+<script>
+(function(){
+  try { if (window.hljs) hljs.highlightAll(); } catch(e) {}
+  const slides = [...document.querySelectorAll('.slide')];
+  const cont = document.getElementById('cont'), barra = document.getElementById('barra'), secao = document.getElementById('secao');
+  let i = Math.max(0, Math.min(slides.length - 1, (parseInt(location.hash.slice(1)) || 1) - 1));
+  function ir(n){
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach((s, k) => s.classList.toggle('ativo', k === i));
+    slides[i].scrollTop = 0;
+    cont.textContent = (i + 1) + ' / ' + slides.length;
+    secao.textContent = slides[i].dataset.secao || '';
+    barra.style.width = ((i + 1) / slides.length * 100) + '%';
+    history.replaceState(null, '', '#' + (i + 1));
+  }
+  document.getElementById('ant').onclick = () => ir(i - 1);
+  document.getElementById('prox').onclick = () => ir(i + 1);
+  document.addEventListener('keydown', e => {
+    if (['ArrowRight','PageDown',' '].includes(e.key)) { e.preventDefault(); ir(i + 1); }
+    if (['ArrowLeft','PageUp'].includes(e.key)) { e.preventDefault(); ir(i - 1); }
+    if (e.key === 'Home') ir(0);
+    if (e.key === 'End') ir(slides.length - 1);
+    if (e.key === 'f' || e.key === 'F') { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.(); }
+  });
+  let x0 = null;
+  document.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, {passive:true});
+  document.addEventListener('touchend', e => {
+    if (x0 === null) return;
+    const dx = e.changedTouches[0].clientX - x0;
+    if (Math.abs(dx) > 60) ir(i + (dx < 0 ? 1 : -1));
+    x0 = null;
+  });
+  ir(i);
+})();
+</script>
+</body>
+</html>
